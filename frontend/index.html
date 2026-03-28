@@ -1,0 +1,81 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📈 Stock Investment AI Assistant</title>
+    <link rel="stylesheet" href="style.css?v=2026">
+    <!-- 引入 marked.js 解析Markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- 引入 ECharts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
+</head>
+<body>
+    <!-- 登录注册弹窗 -->
+    <div id="loginModal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>🔐 Welcome to AI Stock Assistant</h2>
+            <p>Please log in or sign up to sync your chat history</p>
+            <input type="text" id="usernameInput" placeholder="Username (Letters/Numbers)" autocomplete="off">
+            <input type="password" id="passwordInput" placeholder="Password" autocomplete="off">
+            <div class="modal-buttons">
+                <button onclick="handleLogin()">Login</button>
+                <button onclick="handleRegister()" class="btn-secondary">Sign Up</button>
+            </div>
+            <div id="loginError" class="error-msg"></div>
+        </div>
+    </div>
+
+<div class="layout-wrapper">
+        <!-- 侧边栏：用于显示历史对话或者功能菜单 -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2>📈 AI Investment Center</h2>
+            </div>
+            
+            <div class="sidebar-content">
+                <div class="menu-label">User Panel</div>
+                <div id="userInfo" class="user-card" style="display: none;">
+                    <div class="user-avatar">👤</div>
+                    <div class="user-info-text">
+                        <div id="currentUsername" style="font-weight: bold;"></div>
+                        <div style="font-size: 12px; color: #888;">Free Tier User</div>
+                    </div>
+                </div>
+
+                <div class="menu-label" style="margin-top: 20px;">Quick Actions</div>
+                <button class="menu-btn" onclick="clearHistory()">
+                    <span>🗑️</span> Clear Memory
+                </button>
+                <button class="menu-btn logout-btn" onclick="handleLogout()">
+                    <span>🚪</span> Log Out
+                </button>
+            </div>
+            
+            <div class="sidebar-footer">
+                IS6620 AI Assistant v1.0
+            </div>
+        </div>
+
+        <!-- 主聊天区域 -->
+        <div class="main-content">
+            <div id="chatbox" class="chatbox">
+                <!-- 预留动态插入聊天消息的地方 -->
+            </div>
+
+            <div class="input-area">
+                <input
+                    id="userInput" 
+                    type="text"
+                    placeholder="Ask about a stock or topic... (e.g., AAPL or Microsoft)"
+                    onkeypress="if(event.key==='Enter') sendMessage()"
+                    autocomplete="off"
+                />
+                <button onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="app.js"></script>
+</body>
+</html>
