@@ -86,6 +86,7 @@ body { background: #f0f2f5; min-height: 100vh; padding: 20px; display: flex; ali
     min-width: 60%;
     max-width: 100%; /* 防止AI内容超宽拉伸页面 */
     word-break: break-word;
+    line-height: 1.65;
 }
 
 /* 修复 Markdown 表格和代码块导致的页面拉伸 */
@@ -94,11 +95,25 @@ body { background: #f0f2f5; min-height: 100vh; padding: 20px; display: flex; ali
     width: 100%;
     overflow-x: auto;
     border-collapse: collapse;
+    margin: 10px 0 14px;
+    background: #fff;
 }
 
 .message.ai th, .message.ai td {
     border: 1px solid #ccc;
     padding: 6px 12px;
+    vertical-align: top;
+}
+
+.message.ai th {
+    background: #fff1f1;
+    color: #7a1a1a;
+    font-weight: 700;
+}
+
+.message.ai td:last-child {
+    white-space: nowrap;
+    font-family: Consolas, 'Courier New', monospace;
 }
 
 .message.ai pre {
@@ -149,6 +164,21 @@ body { background: #f0f2f5; min-height: 100vh; padding: 20px; display: flex; ali
     font-size: 1.1em;
 }
 
+.message.ai h2 {
+    margin-top: 14px;
+    padding: 8px 10px;
+    border-left: 4px solid #b71c1c;
+    background: #fff4f4;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+}
+
+.message.ai h3 {
+    font-size: 1em;
+    font-weight: 700;
+}
+
 .message.ai p {
     margin-bottom: 8px;
     line-height: 1.6;
@@ -160,7 +190,7 @@ body { background: #f0f2f5; min-height: 100vh; padding: 20px; display: flex; ali
 }
 
 .message.ai li {
-    margin-bottom: 4px;
+    margin-bottom: 6px;
 }
 
 .message.ai strong {
@@ -174,6 +204,17 @@ body { background: #f0f2f5; min-height: 100vh; padding: 20px; display: flex; ali
     color: #555;
     margin: 10px 0;
     background: rgba(211, 47, 47, 0.05);
+}
+
+.message.ai a {
+    color: #b71c1c;
+    text-decoration: underline;
+    font-weight: 600;
+    word-break: break-all;
+}
+
+.message.ai a:hover {
+    color: #8d1515;
 }
 
 .message.welcome-message {

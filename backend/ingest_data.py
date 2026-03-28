@@ -30,10 +30,21 @@ def process_documents():
     
     for filename in files:
         # 解析文件名提取股票代码和标题
-        # 假设格式：9988.HK_阿里巴巴2023财报摘要.pdf
-        parts = filename.replace('.txt', '').replace('.pdf', '').split('_', 1)
-        stock_code = parts[0] if len(parts) > 1 else 'UNKNOWN'
-        title = parts[1] if len(parts) > 1 else filename
+        # 假设格式：00288.txt, 9988.HK_阿里巴巴公司介绍.pdf, 或 01024_1.txt
+        base_name = filename.replace('.txt', '').replace('.pdf', '')
+        parts = base_name.split('_', 1)
+        
+        if len(parts) > 1:
+            stock_code = parts[0]
+            title = parts[1]
+        else:
+            # 如果没有下划线，直接把不带后缀的文件名作为代码
+            stock_code = parts[0]
+            title = filename
+            
+        # 如果代码全是数字，且没有加 ".HK" 后缀，我们给它加上
+        if stock_code.isdigit():
+            stock_code += ".HK"
 
         filepath = os.path.join(DOCS_DIR, filename)
         

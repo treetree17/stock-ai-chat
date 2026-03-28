@@ -10,119 +10,21 @@ from datetime import datetime, timedelta
 import requests
 
 try:
+    from alias_config import MARKET_ALIAS_MAP, load_extended_alias_map
+except Exception:
+    from backend.alias_config import MARKET_ALIAS_MAP, load_extended_alias_map
+
+try:
     import yfinance as yf
 except Exception:
     yf = None
 
+_extended_alias_map = load_extended_alias_map()
 
 class MarketDataService:
     """行情服务（yfinance + 本地兜底）"""
 
-    _alias_map = {
-        # Hong Kong
-        "s&p 500": "^GSPC",
-        "sp500": "^GSPC",
-        "s&p": "^GSPC",
-        "dow jones": "^DJI",
-        "nasdaq": "^IXIC",
-        "阿里": "9988.HK",
-        "阿里巴巴": "9988.HK",
-        "baba": "9988.HK",
-        "腾讯": "0700.HK",
-        "騰訊": "0700.HK",
-        "tencent": "0700.HK",
-        "美团": "3690.HK",
-        "美團": "3690.HK",
-        "meituan": "3690.HK",
-        "网易": "9999.HK",
-        "網易": "9999.HK",
-        "netease": "9999.HK",
-        "京东": "9618.HK",
-        "京東": "9618.HK",
-        "jd.com": "9618.HK",
-
-        # US tech
-        "苹果": "AAPL",
-        "apple": "AAPL",
-        "aapl": "AAPL",
-        "微软": "MSFT",
-        "微軟": "MSFT",
-        "microsoft": "MSFT",
-        "msft": "MSFT",
-        "谷歌": "GOOGL",
-        "谷歌a": "GOOGL",
-        "google": "GOOGL",
-        "alphabet": "GOOGL",
-        "亚马逊": "AMZN",
-        "亞馬遜": "AMZN",
-        "amazon": "AMZN",
-        "amzn": "AMZN",
-        "特斯拉": "TSLA",
-        "tesla": "TSLA",
-        "tsla": "TSLA",
-        "英伟达": "NVDA",
-        "英偉達": "NVDA",
-        "nvidia": "NVDA",
-        "nvda": "NVDA",
-        "脸书": "META",
-        "臉書": "META",
-        "meta": "META",
-        "facebook": "META",
-        "奈飞": "NFLX",
-        "奈飛": "NFLX",
-        "netflix": "NFLX",
-        "amd": "AMD",
-        "超微": "AMD",
-        "英特尔": "INTC",
-        "英特爾": "INTC",
-        "intel": "INTC",
-        
-        # 中概股补充
-        "拼多多": "PDD",
-        "pdd": "PDD",
-        "百度": "BIDU",
-        "baidu": "BIDU",
-        "理想": "LI",
-        "理想汽车": "LI",
-        "蔚来": "NIO",
-        "小鹏": "XPEV",
-        "小鹏汽车": "XPEV",
-        "b站": "BILI",
-        "哔哩哔哩": "BILI",
-
-        # US consumer/industrial
-        "波音": "BA",
-        "boeing": "BA",
-        "可口可乐": "KO",
-        "可口可樂": "KO",
-        "coca cola": "KO",
-        "星巴克": "SBUX",
-        "starbucks": "SBUX",
-        "costco": "COST",
-
-        # China A-share (add exchange suffix for yfinance)
-        "茅台": "600519.SS",
-        "貴州茅台": "600519.SS",
-        "贵州茅台": "600519.SS",
-        "招商银行": "600036.SS",
-        "招商銀行": "600036.SS",
-        "平安": "601318.SS",
-        "中国平安": "601318.SS",
-        "中國平安": "601318.SS",
-        "宁德时代": "300750.SZ",
-        "寧德時代": "300750.SZ",
-        "中免": "601888.SS",
-        "中国中免": "601888.SS",
-        "中國中免": "601888.SS",
-        "美的": "000333.SZ",
-        "美的集团": "000333.SZ",
-        "美的集團": "000333.SZ",
-        "格力": "000651.SZ",
-        "格力电器": "000651.SZ",
-        "格力電器": "000651.SZ",
-        "比亚迪": "002594.SZ",
-        "比亞迪": "002594.SZ",
-    }
+    _alias_map = MARKET_ALIAS_MAP
 
     _cache = {}
     _cache_time = {}
@@ -145,6 +47,10 @@ class MarketDataService:
             if key in lowered:
                 return value
 
+        for key, value in _extended_alias_map.items():
+            if key in lowered:
+                return value
+
         for pattern in patterns:
             match = re.search(pattern, message, flags=re.IGNORECASE)
             if match:
@@ -160,22 +66,70 @@ class MarketDataService:
 
     @staticmethod
     def _guess_search_query(message: str) -> str:
-        """从消息中粗略提取公司名供搜索，避免整句噪音。"""
-        phrases = re.findall(r"[A-Za-z][A-Za-z\s\.\-&]{1,40}", message)
+        """从消息中粗略提取公司/股票名称供搜索"""
+        clean_msg = message
+        
+        # 1. 英文停用词（使用词边界正则，忽略大小写，防止误伤公司名中的字母组合）
+        en_stopwords = [
+            r"give", r"me", r"show", r"tell", r"what", r"is", r"the", r"stock", r"price", 
+            r"data", r"of", r"for", r"company", r"information", r"trend", r"analysis", 
+            r"quote", r"chart", r"about", r"check", r"share", r"market", r"please", 
+            r"can", r"you", r"get", r"analyze"
+        ]
+        pattern = re.compile(r'\b(' + '|'.join(en_stopwords) + r')\b', re.IGNORECASE)
+        clean_msg = pattern.sub(" ", clean_msg)
+
+        # 2. 中文常见停用词（直接字符串替换）
+        cn_stopwords = ["给我", "请", "帮我", "查一下", "查询", "的", "股票", "数据", "行情", "走势", "分析", "一下", "公司", "股价", "信息", "展示", "看看", "多少"]
+        for word in cn_stopwords:
+            clean_msg = clean_msg.replace(word, " ")
+        
+        # 首先尝试英文名称匹配
+        phrases = re.findall(r"[A-Za-z][A-Za-z\s\.\-&]{1,40}", clean_msg)
+
+        # 补充：尝试提取连续的中文名称
+        cn_phrases = re.findall(r"[\u4e00-\u9fa5]{2,10}", clean_msg)
+        phrases.extend(cn_phrases)
+
         if not phrases:
             return None
-        candidate = max(phrases, key=len).strip()
-        return candidate if len(candidate) >= 2 else None
 
+        # 选出最长的词作为搜索词
     @staticmethod
     def _search_symbol(query: str) -> str:
-        """调用 Yahoo Finance 搜索接口根据公司名反查代码，结果缓存6小时。"""
+        """调用 Yahoo Finance 和 Tencent Smartbox 根据公司名反查代码"""
         cache_key = query.lower()
         cache_hit = MarketDataService._search_cache.get(cache_key)
         cache_time = MarketDataService._search_cache_time.get(cache_key)
         if cache_hit and cache_time and datetime.now() - cache_time < timedelta(hours=6):
             return cache_hit
 
+        # 优先尝试腾讯财经智能搜索(支持拼音和中文名称)
+        try:
+            resp = requests.get(f"https://smartbox.gtimg.cn/s3/?v=2&q={query}&t=all", timeout=2)
+            text = resp.text
+            if "v_hint=" in text:
+                hints_str = text.split('="')[1].strip('"\n; ')
+                hints = hints_str.split('^')
+                for hint in hints:
+                    parts = hint.split('~')
+                    if len(parts) >= 2:
+                        market = parts[0]
+                        code = parts[1]
+                        ret = None
+                        if market == "hk": ret = f"{code}.HK"
+                        elif market == "us": ret = code.split('.')[0].upper()
+                        elif market == "sh": ret = f"{code}.SS"
+                        elif market == "sz": ret = f"{code}.SZ"
+                        
+                        if ret:
+                            MarketDataService._search_cache[cache_key] = ret
+                            MarketDataService._search_cache_time[cache_key] = datetime.now()
+                            return ret
+        except Exception as e:
+            print(f"⚠️ Tencent Smartbox failed: {e}")
+
+        # 如果没有yfinance，或者腾讯搜不到，用原来的 Yahoo Finance
         if not yf:
             return None
 
@@ -250,22 +204,41 @@ class MarketDataService:
 
         data = {}
         try:
-            # 1. 尝试使用 yfinance (使用 5d 获取最近一天防止周末为空)
+            # 1. 尝试使用 yfinance (对HK股票进行代码处理，如 00288.HK -> 0288.HK)
             if yf:
-                ticker = yf.Ticker(stock_code)
-                df = ticker.history(period="5d")
-                
+                yf_stock_code = stock_code
+                if yf_stock_code.endswith('.HK'):
+                    parts = yf_stock_code.split('.')
+                    # HK 股票在 Yahoo Finance 一般最高保留 4 位数字
+                    if len(parts[0]) == 5 and parts[0].startswith('0'):
+                        yf_stock_code = parts[0][1:] + '.HK'
+
+                ticker = yf.Ticker(yf_stock_code)
+                df = ticker.history(period="10d")
                 if not df.empty:
                     last = df.iloc[-1]
                     price = round(float(last.get("Close", last.get("close", 0))), 2)
                     open_price = float(last.get("Open", last.get("open", price))) or price
                     change_pct = ((price - open_price) / open_price * 100) if open_price else 0.0
                     volume_raw = float(last.get("Volume", last.get("volume", 0)))
+                    
+                    # 提取最近10个交易日的收盘价趋势，供LLM分析
+                    try:
+                        history_prices = []
+                        for idx, row in df.iterrows():
+                            date_str = idx.strftime('%m-%d')
+                            close_p = round(float(row.get("Close", row.get("close", 0))), 2)
+                            history_prices.append(f"{date_str}: {close_p}")
+                        trend_str = " -> ".join(history_prices)
+                    except:
+                        trend_str = "N/A"
+                    
                     data = {
                         "price": price,
                         "change": round(change_pct, 2),
                         "volume": f"{volume_raw / 1e6:.1f}M",
                         "pe": "N/A",
+                        "trend": trend_str
                     }
         except Exception as e:
             print(f"⚠️ yfinance fetch failed, trying fallback API (Error: {e})")
@@ -284,7 +257,13 @@ class MarketDataService:
     def get_kline_options(stock_code: str) -> str:
         """获取近期K线图的ECharts Options JSON，返回最近1或2个月K线"""
         try:
-            url = f"https://query1.finance.yahoo.com/v8/finance/chart/{stock_code}?range=2mo&interval=1d"
+            yf_stock_code = stock_code
+            if yf_stock_code.endswith('.HK'):
+                parts = yf_stock_code.split('.')
+                if len(parts[0]) == 5 and parts[0].startswith('0'):
+                    yf_stock_code = parts[0][1:] + '.HK'
+                    
+            url = f"https://query1.finance.yahoo.com/v8/finance/chart/{yf_stock_code}?range=2mo&interval=1d"
             headers = {"User-Agent": "Mozilla/5.0"}
             resp = requests.get(url, headers=headers, timeout=5)
             data = resp.json()

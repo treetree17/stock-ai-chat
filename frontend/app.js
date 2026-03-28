@@ -4,6 +4,20 @@ const API_URL = "";
 let currentUserToken = localStorage.getItem('user_token');
 let currentUsername = localStorage.getItem('user_name');
 
+function renderMarkdownWithLinks(text) {
+    if (typeof marked === 'undefined') {
+        return text;
+    }
+    const html = marked.parse(text);
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = html;
+    wrapper.querySelectorAll('a').forEach((a) => {
+        a.setAttribute('target', '_blank');
+        a.setAttribute('rel', 'noopener noreferrer');
+    });
+    return wrapper.innerHTML;
+}
+
 window.onload = function() {
     checkLoginStatus();
 };
@@ -226,7 +240,7 @@ async function sendMessage() {
                                 isFirstChunk = false;
                             }
                             aiText += data.content;
-                            msgNode.innerHTML = marked.parse(aiText);
+                            msgNode.innerHTML = renderMarkdownWithLinks(aiText);
                             
                             // Keep scroll at bottom
                             const chatbox = document.getElementById('chatbox');
@@ -277,7 +291,7 @@ function addMessage(text, role, className = '', isHtml = false, forcedId = null)
         div.innerHTML = text;
     } else if (role === 'ai' && typeof marked !== 'undefined') {
         // Markdown support
-        div.innerHTML = marked.parse(text);
+        div.innerHTML = renderMarkdownWithLinks(text);
     } else {
         div.textContent = text;
     }
