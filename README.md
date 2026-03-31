@@ -78,12 +78,12 @@ stock-ai-chat/
 │   ├── models.py               # SQLAlchemy模型
 │   ├── config.py               # 配置管理
 │   ├── services/               # 业务逻辑
+│   │   ├── cache.py
 │   │   ├── chat_service.py
-│   │   ├── tushare_service.py
-│   │   ├── market_data_service.py
+│   │   ├── live_news_service.py
 │   │   ├── llm_service.py
+│   │   ├── market_data_service.py
 │   │   ├── news_service.py
-│   │   ├── live_cache.py
 │   └── requirements.txt
 ├── frontend/
 │   ├── index.html
@@ -115,8 +115,8 @@ stock-ai-chat/
 
 ## 💡 技术栈
 
-- **后端**：FYahoo Finance, LLM Uvicorn
-- **数据源**：Tushare API, OpenAI API
+- **后端**：FastAPI, Uvicorn
+- **数据源**：Yahoo Finance, Google News RSS, OpenAI API (或其他LLM)
 - **数据库**：SQLite3
 - **前端**：HTML5, CSS3, Vanilla JavaScript
 

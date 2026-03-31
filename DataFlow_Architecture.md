@@ -6,6 +6,31 @@
 随着全球金融市场的日益复杂化与信息爆炸，个人投资者在面对海量的市场数据、实时滚动的财经新闻以及冗长专业的企业财报时，往往难以在短时间内快速提取有价值的关键信息并做出明智的投资决策。为了解决这一行业痛点，我们构想并设计了一个基于大语言模型 (LLM) 的智能股票投资 AI 助手。该助手旨在模拟专业金融分析师的日常工作流程与研判逻辑，结合实时的量化行情指标、最新的互联网财报新闻以及深度本地研报，为用户提供一站式、自然语言交互的智能投资分析咨询服务，彻底打破普通投资者与专业机构之间的信息壁垒。
 
 ### 1.2 解决方案的关键组成部分 (Key Components of the Solution)
+
+**系统数据流转架构图 (Data Flow Diagram)：**
+
+```mermaid
+graph TD
+    User([用户 User]) -->|Natural Language Query| Frontend[前端界面 Frontend]
+    Frontend -->|POST /api/chat| Intent[意图识别与实体提取<br>Intent & Entity Recognition]
+    
+    Intent -- "非金融问题 / Non-Financial" --> BasicChat[基础对话模式<br>Basic Chat Mode]
+    Intent -- "股票相关 / Stock Query" --> AsyncPipeline{并发抓取网络<br>Concurrent Pipeline}
+    
+    AsyncPipeline -->|同步获取/Sync| MarketData[(量化行情源<br>YFinance)]
+    AsyncPipeline -->|同步爬取/Sync| LiveNews[(实时外部资讯<br>Google News RSS)]
+    AsyncPipeline -->|向量检索/KNN| RAG[(本地深度知识库<br>SQLite + FastEmbed)]
+    
+    MarketData --> PromptAssembly[提示词组装与情境注入<br>Prompt Assembly]
+    LiveNews --> PromptAssembly
+    RAG --> PromptAssembly
+    
+    PromptAssembly --> LLM[大语言模型引擎<br>LLM Service]
+    BasicChat --> LLM
+    
+    LLM -->|流式响应 / SSE Streaming| Frontend
+```
+
 本系统的解决方案主要由以下几个核心技术与业务组件构成：
 1. **意图识别与实体提取模块**：系统前端接入后，会首先自动识别用户的提问意图（精准判断是否为股票金融相关的垂直领域问题），并从自然语言中提取具体的股票实体信息，以便后续精准调取数据。
 2. **多源数据并发抓取网络**：
@@ -69,15 +94,3 @@
 
 ---
 
-## 5. 工作分配（Work Allocation）
-
-本项目采用高度敏捷的团队交叉协作分工模式执行，各成员所负责的核心任务板块如下：
-
-- **组员 A（后端架构设计与 LLM 核心调优）**：
-  负责高并发 FastAPI 主框架的搭建与 RESTful 接口设计；实现 RAG 检索体系的大模型推理集成，包括主导编写本地向量化与余弦相似度比对算法；统筹多协程调度的流式并发网络问答机制。
-- **组员 B（多源数据接入与数据工程化）**：
-  全面负责外部异构 API 的标准化集成，主导行情数据的对接以及实时网页新闻流的云端抓取；并负责本地离线长文本文件智能切块并注入向量知识库的自动化脚本开发工作。
-- **组员 C（前端可视化呈现与增强交互体验）**：
-  应用原生 Web 技术搭建平滑抗抖动的流式问答交互页面；负责基于外部数据的股票金融图表的前端无缝动态渲染，以及整体系统 UI 响应式与体验级优化。
-- **组员 D（数据底层管控与整体测试部署）**：
-  负责底层轻量化数据体系的设计管理，主导系统的意图拦截策略与上下文记忆库的维系；全面负责项目的整体并发容量与模型回答准确性评测，以及最终项目文档资料、结题报告的校准与撰写。
